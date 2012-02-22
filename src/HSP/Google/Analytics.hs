@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE DeriveDataTypeable, PatternGuards, FlexibleContexts, TypeFamilies #-}
 {-# OPTIONS_GHC -F -pgmFtrhsx #-}
 module HSP.Google.Analytics 
     ( UACCT(..)
@@ -11,12 +11,37 @@ import HSP
 import qualified HSX.XMLGenerator as HSX
 import Prelude hiding (head)
 
-newtype UACCT = UACCT String -- ^ The UACCT provided to you by Google
+newtype UACCT = UACCT String -- ^ The UACCT provided to you by Google (looks like: @UA-XXXXX-X@)
     deriving (Read, Show, Eq, Ord, Typeable, Data)
 
--- | create the google analytics script tags
+-- | create the google analytics asynchronous tracking script tag
+--
+-- NOTE: you must put this right before the \<\/head\> tag
+analyticsAsync :: (XMLGenerator m) => 
+                  UACCT     -- ^ web property ID (looks like: @UA-XXXXX-X@)
+               -> GenXML m
+analyticsAsync (UACCT uacct) =
+    <script type="text/javascript">
+
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', '<% uacct %>']);
+      _gaq.push(['_trackPageview']);
+
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+
+    </script>
+
+-- | create the (old) google analytics script tags
+--
 -- NOTE: you must put the <% analytics yourUACCT %> immediately before the </body> tag
--- See also: addAnalytics
+--
+-- You probably want to use 'analyticsAsync' instead.
+--
+-- See also: 'addAnalytics', 'analyticsAsync'
 analytics :: (XMLGenerator m) => UACCT -> GenXMLList m
 analytics (UACCT uacct) =
     do a <- <script type="text/javascript">
