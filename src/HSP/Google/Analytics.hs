@@ -1,9 +1,10 @@
 {-# LANGUAGE DeriveDataTypeable, PatternGuards, FlexibleContexts, TypeFamilies #-}
 {-# OPTIONS_GHC -F -pgmFtrhsx #-}
-module HSP.Google.Analytics 
+module HSP.Google.Analytics
     ( UACCT(..)
     , analytics
     , addAnalytics
+    , analyticsAsync
     ) where
 
 import Data.Generics (Data, Typeable)
@@ -17,7 +18,7 @@ newtype UACCT = UACCT String -- ^ The UACCT provided to you by Google (looks lik
 -- | create the google analytics asynchronous tracking script tag
 --
 -- NOTE: you must put this right before the \<\/head\> tag
-analyticsAsync :: (XMLGenerator m) => 
+analyticsAsync :: (XMLGenerator m) =>
                   UACCT     -- ^ web property ID (looks like: @UA-XXXXX-X@)
                -> GenXML m
 analyticsAsync (UACCT uacct) =
@@ -61,9 +62,9 @@ addAnalytics :: ( AppendChild m XML
                 , EmbedAsChild m XML
                 , EmbedAsAttr m Attribute
                 , XMLGenerator m
-                , HSX.XML m ~ XML) 
-             => UACCT 
-             -> XMLGenT m XML 
+                , HSX.XML m ~ XML)
+             => UACCT
+             -> XMLGenT m XML
              -> GenXML m
 addAnalytics uacct pg =
     do page <- pg
