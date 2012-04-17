@@ -9,7 +9,6 @@ module HSP.Google.Analytics
 
 import Data.Generics (Data, Typeable)
 import HSP
-import qualified HSX.XMLGenerator as HSX
 import Prelude hiding (head)
 
 newtype UACCT = UACCT String -- ^ The UACCT provided to you by Google (looks like: @UA-XXXXX-X@)
@@ -62,7 +61,7 @@ addAnalytics :: ( AppendChild m XML
                 , EmbedAsChild m XML
                 , EmbedAsAttr m Attribute
                 , XMLGenerator m
-                , HSX.XML m ~ XML)
+                , XMLType m ~ XML)
              => UACCT
              -> XMLGenT m XML
              -> GenXML m

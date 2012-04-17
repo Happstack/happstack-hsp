@@ -6,29 +6,23 @@ import HSP
 import Control.Monad (liftM)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
-import qualified HSX.XMLGenerator as HSX
+import {- qualified -} HSX.XMLGenerator -- as HSX
 import Happstack.Server.Internal.Monads (WebT)
 
-instance (Monad m) => HSX.XMLGen (WebT m) where
-#if __GLASGOW_HASKELL__ < 702
-    type HSX.XML (WebT m) = XML
-    newtype HSX.Child (WebT m) = WChild { unWChild :: XML }
-    newtype HSX.Attribute (WebT m) = WAttr { unWAttr :: Attribute }
-#else
-    type XML (WebT m) = XML
-    newtype Child (WebT m) = WChild { unWChild :: XML }
-    newtype Attribute (WebT m) = WAttr { unWAttr :: Attribute }
-#endif
+instance (Monad m) => XMLGen (WebT m) where
+    type XMLType (WebT m) = XML
+    newtype ChildType (WebT m) = WChild { unWChild :: XML }
+    newtype AttributeType (WebT m) = WAttr { unWAttr :: Attribute }
     genElement n attrs children = 
         do attribs <- map unWAttr `liftM` asAttr attrs
            childer <- (flattenCDATA . map unWChild) `liftM` asChild children
-           HSX.XMLGenT $ return (Element
+           return (Element
                               (toName n)
                               attribs
                               childer
                              )
     xmlToChild = WChild
-    pcdataToChild = HSX.xmlToChild . pcdata
+    pcdataToChild = xmlToChild . pcdata
 
 flattenCDATA :: [XML] -> [XML]
 flattenCDATA cxml = 
@@ -51,20 +45,20 @@ instance (Monad m, Functor m) => IsAttrValue (WebT m) T.Text where
 instance (Monad m, Functor m) => IsAttrValue (WebT m) TL.Text where
     toAttrValue = toAttrValue . TL.unpack
 
-instance (Monad m) => HSX.EmbedAsAttr (WebT m) Attribute where
+instance (Monad m) => EmbedAsAttr (WebT m) Attribute where
     asAttr = return . (:[]) . WAttr 
 
-instance (Monad m) => HSX.EmbedAsAttr (WebT m) (Attr String Char) where
+instance (Monad m) => EmbedAsAttr (WebT m) (Attr String Char) where
     asAttr (n := c)  = asAttr (n := [c])
 
-instance (Monad m) => HSX.EmbedAsAttr (WebT m) (Attr String String) where
+instance (Monad m) => EmbedAsAttr (WebT m) (Attr String String) where
     asAttr (n := str)  = asAttr $ MkAttr (toName n, pAttrVal str)
 
-instance (Monad m) => HSX.EmbedAsAttr (WebT m) (Attr String Bool) where
+instance (Monad m) => EmbedAsAttr (WebT m) (Attr String Bool) where
     asAttr (n := True)  = asAttr $ MkAttr (toName n, pAttrVal "true")
     asAttr (n := False) = asAttr $ MkAttr (toName n, pAttrVal "false")
 
-instance (Monad m) => HSX.EmbedAsAttr (WebT m) (Attr String Int) where
+instance (Monad m) => EmbedAsAttr (WebT m) (Attr String Int) where
     asAttr (n := i)  = asAttr $ MkAttr (toName n, pAttrVal (show i))
 
 instance (Monad m, Functor m, IsName n) => (EmbedAsAttr (WebT m) (Attr n TL.Text)) where

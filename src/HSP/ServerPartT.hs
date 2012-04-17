@@ -7,29 +7,23 @@ import HSP
 import Control.Monad              (liftM)
 import qualified Data.Text        as T
 import qualified Data.Text.Lazy   as TL
-import qualified HSX.XMLGenerator as HSX
+import {- qualified -} HSX.XMLGenerator -- as HSX
 import Happstack.Server (ServerPartT)
 
-instance (Monad m) => HSX.XMLGen (ServerPartT m) where
-#if __GLASGOW_HASKELL__ < 702
-    type HSX.XML (ServerPartT m) = XML
-    newtype HSX.Child (ServerPartT m) = SChild { unSChild :: XML }
-    newtype HSX.Attribute (ServerPartT m) = SAttr { unSAttr :: Attribute }
-#else
-    type XML (ServerPartT m) = XML
-    newtype Child (ServerPartT m) = SChild { unSChild :: XML }
-    newtype Attribute (ServerPartT m) = SAttr { unSAttr :: Attribute }
-#endif
+instance (Monad m) => XMLGen (ServerPartT m) where
+    type XMLType (ServerPartT m) = XML
+    newtype ChildType (ServerPartT m) = SChild { unSChild :: XML }
+    newtype AttributeType (ServerPartT m) = SAttr { unSAttr :: Attribute }
     genElement n attrs children = 
         do attribs <- map unSAttr `liftM` asAttr attrs
            childer <- (flattenCDATA . map unSChild) `liftM`asChild children
-           HSX.XMLGenT $ return (Element
+           return (Element
                               (toName n)
                               attribs
                               childer
                              )
     xmlToChild = SChild
-    pcdataToChild = HSX.xmlToChild . pcdata
+    pcdataToChild = xmlToChild . pcdata
 
 flattenCDATA :: [XML] -> [XML]
 flattenCDATA cxml = 
@@ -52,20 +46,20 @@ instance (Monad m, Functor m) => IsAttrValue (ServerPartT m) T.Text where
 instance (Monad m, Functor m) => IsAttrValue (ServerPartT m) TL.Text where
     toAttrValue = toAttrValue . TL.unpack
 
-instance (Monad m) => HSX.EmbedAsAttr (ServerPartT m) Attribute where
+instance (Monad m) => EmbedAsAttr (ServerPartT m) Attribute where
     asAttr = return . (:[]) . SAttr 
 
-instance (Monad m, IsName n) => HSX.EmbedAsAttr (ServerPartT m) (Attr n Char) where
+instance (Monad m, IsName n) => EmbedAsAttr (ServerPartT m) (Attr n Char) where
     asAttr (n := c)  = asAttr (n := [c])
 
-instance (Monad m, IsName n) => HSX.EmbedAsAttr (ServerPartT m) (Attr n String) where
+instance (Monad m, IsName n) => EmbedAsAttr (ServerPartT m) (Attr n String) where
     asAttr (n := str)  = asAttr $ MkAttr (toName n, pAttrVal str)
 
-instance (Monad m, IsName n) => HSX.EmbedAsAttr (ServerPartT m) (Attr n Bool) where
+instance (Monad m, IsName n) => EmbedAsAttr (ServerPartT m) (Attr n Bool) where
     asAttr (n := True)  = asAttr $ MkAttr (toName n, pAttrVal "true")
     asAttr (n := False) = asAttr $ MkAttr (toName n, pAttrVal "false")
 
-instance (Monad m, IsName n) => HSX.EmbedAsAttr (ServerPartT m) (Attr n Int) where
+instance (Monad m, IsName n) => EmbedAsAttr (ServerPartT m) (Attr n Int) where
     asAttr (n := i)  = asAttr $ MkAttr (toName n, pAttrVal (show i))
 
 instance (Monad m, Functor m, IsName n) => (EmbedAsAttr (ServerPartT m) (Attr n TL.Text)) where

@@ -16,7 +16,7 @@ import Control.Monad.Trans  (MonadTrans(lift), MonadIO(liftIO))
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import HSP
-import qualified HSX.XMLGenerator as HSX
+import {- qualified -} HSX.XMLGenerator -- as HSX
 
 -- * IdentityT Monad Transformer
 
@@ -32,24 +32,18 @@ instance MonadTrans IdentityT where
 
 -- * HSX.XMLGenerator for IdentityT
 
-instance (Monad m, Functor m) => HSX.XMLGenerator (IdentityT m)
+instance (Monad m, Functor m) => XMLGenerator (IdentityT m)
 
-instance (Functor m, Monad m) => HSX.XMLGen (IdentityT m) where
-#if __GLASGOW_HASKELL__ < 702
-    type HSX.XML (IdentityT m) = XML
-    newtype HSX.Child (IdentityT m) = IChild { unIChild :: XML }
-    newtype HSX.Attribute (IdentityT m) = IAttr { unIAttr :: Attribute }
-#else
-    type XML (IdentityT m) = XML
-    newtype Child (IdentityT m) = IChild { unIChild :: XML }
-    newtype Attribute (IdentityT m) = IAttr { unIAttr :: Attribute }
-#endif
-    genElement n attrs children = HSX.XMLGenT $ 
-                                  do attrs'    <- HSX.unXMLGenT (fmap (map unIAttr . concat) (sequence attrs))
-                                     children' <- HSX.unXMLGenT (fmap (map unIChild . concat) (sequence children))
+instance (Functor m, Monad m) => XMLGen (IdentityT m) where
+    type XMLType (IdentityT m) = XML
+    newtype ChildType (IdentityT m) = IChild { unIChild :: XML }
+    newtype AttributeType (IdentityT m) = IAttr { unIAttr :: Attribute }
+    genElement n attrs children = 
+                                  do attrs'    <- fmap (map unIAttr . concat) (sequence attrs)
+                                     children' <- fmap (map unIChild . concat) (sequence children)
                                      return (Element (toName n) attrs' children')
     xmlToChild = IChild
-    pcdataToChild = HSX.xmlToChild . pcdata
+    pcdataToChild = xmlToChild . pcdata
 
 instance (Monad m, Functor m) => IsAttrValue (IdentityT m) T.Text where
     toAttrValue = toAttrValue . T.unpack
@@ -57,20 +51,20 @@ instance (Monad m, Functor m) => IsAttrValue (IdentityT m) T.Text where
 instance (Monad m, Functor m) => IsAttrValue (IdentityT m) TL.Text where
     toAttrValue = toAttrValue . TL.unpack
 
-instance (Monad m, Functor m) => HSX.EmbedAsAttr (IdentityT m) Attribute where
+instance (Monad m, Functor m) => EmbedAsAttr (IdentityT m) Attribute where
     asAttr = return . (:[]) . IAttr 
 
-instance (Monad m, Functor m) => HSX.EmbedAsAttr (IdentityT m) (Attr String Char) where
+instance (Monad m, Functor m) => EmbedAsAttr (IdentityT m) (Attr String Char) where
     asAttr (n := c)  = asAttr (n := [c])
 
-instance (Monad m, Functor m) => HSX.EmbedAsAttr (IdentityT m) (Attr String String) where
+instance (Monad m, Functor m) => EmbedAsAttr (IdentityT m) (Attr String String) where
     asAttr (n := str)  = asAttr $ MkAttr (toName n, pAttrVal str)
 
-instance (Monad m, Functor m) => HSX.EmbedAsAttr (IdentityT m) (Attr String Bool) where
+instance (Monad m, Functor m) => EmbedAsAttr (IdentityT m) (Attr String Bool) where
     asAttr (n := True)  = asAttr $ MkAttr (toName n, pAttrVal "true")
     asAttr (n := False) = asAttr $ MkAttr (toName n, pAttrVal "false")
 
-instance (Monad m, Functor m) => HSX.EmbedAsAttr (IdentityT m) (Attr String Int) where
+instance (Monad m, Functor m) => EmbedAsAttr (IdentityT m) (Attr String Int) where
     asAttr (n := i)  = asAttr $ MkAttr (toName n, pAttrVal (show i))
 
 instance (Monad m, Functor m, IsName n) => (EmbedAsAttr (IdentityT m) (Attr n TL.Text)) where
@@ -109,10 +103,10 @@ instance (Monad m, Functor m) => AppendChild (IdentityT m) XML where
          CDATA _ _       -> return xml
          Element n as cs -> return $ Element n as (cs ++ (map stripChild chs))
 
-stripAttr :: (Monad m, Functor m) => HSX.Attribute (IdentityT m) -> Attribute
+stripAttr :: (Monad m, Functor m) => AttributeType (IdentityT m) -> Attribute
 stripAttr  (IAttr a) = a
 
-stripChild :: (Monad m, Functor m) => HSX.Child (IdentityT m) -> XML
+stripChild :: (Monad m, Functor m) => ChildType (IdentityT m) -> XML
 stripChild (IChild c) = c
 
 instance (Monad m, Functor m) => SetAttr (IdentityT m) XML where
@@ -126,6 +120,6 @@ insert :: Attribute -> Attributes -> Attributes
 insert = (:)
 
 evalIdentityT :: (Functor m, Monad m) => XMLGenT (IdentityT m) XML -> m XML
-evalIdentityT = runIdentityT . HSX.unXMLGenT
+evalIdentityT = runIdentityT . unXMLGenT
 
 type IdentT m = XMLGenT (IdentityT m) XML

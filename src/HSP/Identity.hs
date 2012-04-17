@@ -9,27 +9,25 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import HSP
 import Control.Monad.Identity (Identity(Identity, runIdentity))
-import qualified HSX.XMLGenerator as HSX
+import {- qualified -} HSX.XMLGenerator -- as HSX
 
-instance HSX.XMLGenerator Identity
+instance XMLGenerator Identity
 
-instance HSX.XMLGen Identity where
-#if __GLASGOW_HASKELL__ < 702
-    type HSX.XML Identity = XML
-    newtype HSX.Child Identity = IChild { unIChild :: XML }
-    newtype HSX.Attribute Identity = IAttr { unIAttr :: Attribute }
-#else
-    type XML Identity = XML
-    newtype Child Identity = IChild { unIChild :: XML }
-    newtype Attribute Identity = IAttr { unIAttr :: Attribute }
-#endif
-    genElement n attrs children = HSX.XMLGenT $ Identity (Element
-                                                          (toName n)
-                                                          (map unIAttr $ concatMap runIdentity $ map HSX.unXMLGenT attrs)
-                                                          (map unIChild $ concatMap runIdentity $ map HSX.unXMLGenT children)
-                                                         )
+instance XMLGen Identity where
+    type XMLType Identity = XML
+    newtype ChildType Identity = IChild { unIChild :: XML }
+    newtype AttributeType Identity = IAttr { unIAttr :: Attribute }
+    genElement n attrs children = do
+                           attrs' <- asAttr attrs
+                           children' <- asChild children
+                           return $ Element (toName n) (map unIAttr attrs') (map unIChild children')
+--                                XMLGenT $ Identity (Element
+--                                                          (toName n)
+--                                                          (map unIAttr $ concatMap runIdentity $ map unXMLGenT attrs)
+--                                                          (map unIChild $ concatMap runIdentity $ map unXMLGenT children)
+--                                                         )
     xmlToChild = IChild
-    pcdataToChild = HSX.xmlToChild . pcdata
+    pcdataToChild = xmlToChild . pcdata
 
 instance IsAttrValue Identity T.Text where
     toAttrValue = toAttrValue . T.unpack
@@ -84,10 +82,10 @@ instance AppendChild Identity XML where
          CDATA _ _       -> return xml
          Element n as cs -> return $ Element n as (cs ++ (map stripChild chs))
 
-stripAttr :: HSX.Attribute Identity -> Attribute
+stripAttr :: AttributeType Identity -> Attribute
 stripAttr  (IAttr a) = a
 
-stripChild :: HSX.Child Identity -> XML
+stripChild :: ChildType Identity -> XML
 stripChild (IChild c) = c
 
 instance SetAttr Identity XML where
@@ -101,6 +99,6 @@ insert :: Attribute -> Attributes -> Attributes
 insert = (:)
 
 evalIdentity :: XMLGenT Identity XML -> XML
-evalIdentity = runIdentity . HSX.unXMLGenT
+evalIdentity = runIdentity . unXMLGenT
 
 type Ident = XMLGenT Identity
