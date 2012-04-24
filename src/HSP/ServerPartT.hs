@@ -7,14 +7,14 @@ import HSP
 import Control.Monad              (liftM)
 import qualified Data.Text        as T
 import qualified Data.Text.Lazy   as TL
-import {- qualified -} HSX.XMLGenerator -- as HSX
+import HSX.XMLGenerator
 import Happstack.Server (ServerPartT)
 
 instance (Monad m) => XMLGen (ServerPartT m) where
     type XMLType (ServerPartT m) = XML
     newtype ChildType (ServerPartT m) = SChild { unSChild :: XML }
     newtype AttributeType (ServerPartT m) = SAttr { unSAttr :: Attribute }
-    genElement n attrs children = 
+    genElement n attrs children =
         do attribs <- map unSAttr `liftM` asAttr attrs
            childer <- (flattenCDATA . map unSChild) `liftM`asChild children
            return (Element
@@ -26,11 +26,11 @@ instance (Monad m) => XMLGen (ServerPartT m) where
     pcdataToChild = xmlToChild . pcdata
 
 flattenCDATA :: [XML] -> [XML]
-flattenCDATA cxml = 
+flattenCDATA cxml =
                 case flP cxml [] of
                  [] -> []
                  [CDATA _ ""] -> []
-                 xs -> xs                       
+                 xs -> xs
     where
         flP :: [XML] -> [XML] -> [XML]
         flP [] bs = reverse bs
@@ -47,7 +47,7 @@ instance (Monad m, Functor m) => IsAttrValue (ServerPartT m) TL.Text where
     toAttrValue = toAttrValue . TL.unpack
 
 instance (Monad m) => EmbedAsAttr (ServerPartT m) Attribute where
-    asAttr = return . (:[]) . SAttr 
+    asAttr = return . (:[]) . SAttr
 
 instance (Monad m, IsName n) => EmbedAsAttr (ServerPartT m) (Attr n Char) where
     asAttr (n := c)  = asAttr (n := [c])

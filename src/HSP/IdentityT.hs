@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, TypeFamilies, GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-orphans -F -pgmF trhsx #-}
-module HSP.IdentityT 
+module HSP.IdentityT
     ( evalIdentityT
     , IdentT
     , IdentityT(..)
@@ -16,7 +16,7 @@ import Control.Monad.Trans  (MonadTrans(lift), MonadIO(liftIO))
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import HSP
-import {- qualified -} HSX.XMLGenerator -- as HSX
+import HSX.XMLGenerator
 
 -- * IdentityT Monad Transformer
 
@@ -24,7 +24,7 @@ newtype IdentityT m a = IdentityT { runIdentityT :: m a }
     deriving (Functor, Monad, MonadWriter w, MonadReader r, MonadState s, MonadRWS r w s, MonadIO, MonadPlus)
 
 instance (Applicative f) => Applicative (IdentityT f) where
-    pure  = IdentityT . pure     
+    pure  = IdentityT . pure
     (IdentityT f) <*> (IdentityT a) = IdentityT (f <*> a)
 
 instance MonadTrans IdentityT where
@@ -38,7 +38,7 @@ instance (Functor m, Monad m) => XMLGen (IdentityT m) where
     type XMLType (IdentityT m) = XML
     newtype ChildType (IdentityT m) = IChild { unIChild :: XML }
     newtype AttributeType (IdentityT m) = IAttr { unIAttr :: Attribute }
-    genElement n attrs children = 
+    genElement n attrs children =
                                   do attrs'    <- fmap (map unIAttr . concat) (sequence attrs)
                                      children' <- fmap (map unIChild . concat) (sequence children)
                                      return (Element (toName n) attrs' children')
@@ -52,7 +52,7 @@ instance (Monad m, Functor m) => IsAttrValue (IdentityT m) TL.Text where
     toAttrValue = toAttrValue . TL.unpack
 
 instance (Monad m, Functor m) => EmbedAsAttr (IdentityT m) Attribute where
-    asAttr = return . (:[]) . IAttr 
+    asAttr = return . (:[]) . IAttr
 
 instance (Monad m, Functor m) => EmbedAsAttr (IdentityT m) (Attr String Char) where
     asAttr (n := c)  = asAttr (n := [c])
@@ -80,7 +80,7 @@ instance (Monad m, Functor m) => EmbedAsChild (IdentityT m) String where
     asChild = XMLGenT . return . (:[]) . IChild . pcdata
 
 instance (Monad m, Functor m) => EmbedAsChild (IdentityT m) (IdentityT m String) where
-    asChild c = 
+    asChild c =
         do c' <- lift c
            lift . return . (:[]) . IChild . pcdata $ c'
 

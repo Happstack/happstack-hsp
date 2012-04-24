@@ -1,4 +1,4 @@
--- | support for using HSP+Happstack for rendering HTML 
+-- | support for using HSP+Happstack for rendering HTML
 {-# LANGUAGE FlexibleInstances, FlexibleContexts #-}
 {-# OPTIONS_GHC -fno-warn-orphans -F -pgmFtrhsx #-}
 module Happstack.Server.HSP.HTML
@@ -19,7 +19,6 @@ import Happstack.Server
 import HSP
 import HSP.ServerPartT      () -- import 'instance XMLGen ServerPartT'
 import Happstack.Server.HSX () -- import 'instance Happstack XMLGenT'
---import qualified HSX.XMLGenerator as HSX
 
 instance ToMessage XML where
     toContentType _ = P.pack "text/html;charset=utf-8"
@@ -28,13 +27,13 @@ instance ToMessage XML where
 instance ToMessage (Maybe XMLMetaData, XML) where
     toContentType (Just md,_) = P.pack (contentType md)
     toContentType _ = P.pack "text/html;charset=utf-8"
-    toMessage (Just (XMLMetaData (showDt, dt) _ pr), xml) = 
+    toMessage (Just (XMLMetaData (showDt, dt) _ pr), xml) =
         L.fromString ((if showDt then (dt ++) else id) (pr xml))
     toMessage (Nothing, xml) =
         L.fromString (renderAsHTML xml)
 
 -- | A generic webpage template
-defaultTemplate :: (XMLGenerator m, EmbedAsChild m headers, EmbedAsChild m body) => 
+defaultTemplate :: (XMLGenerator m, EmbedAsChild m headers, EmbedAsChild m body) =>
                    String   -- ^ text to use in \<title\> tag
                 -> headers  -- ^ extra headers to insert in \<head\> tag. Use @()@ if none.
                 -> body     -- ^ content to put between the \<body\> tags.

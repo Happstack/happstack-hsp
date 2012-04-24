@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, TypeFamilies #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module HSP.Identity 
+module HSP.Identity
     ( Ident
     , evalIdentity
     ) where
@@ -9,7 +9,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import HSP
 import Control.Monad.Identity (Identity(Identity, runIdentity))
-import {- qualified -} HSX.XMLGenerator -- as HSX
+import HSX.XMLGenerator
 
 instance XMLGenerator Identity
 
@@ -18,14 +18,9 @@ instance XMLGen Identity where
     newtype ChildType Identity = IChild { unIChild :: XML }
     newtype AttributeType Identity = IAttr { unIAttr :: Attribute }
     genElement n attrs children = do
-                           attrs' <- asAttr attrs
+                           attrs'    <- asAttr attrs
                            children' <- asChild children
                            return $ Element (toName n) (map unIAttr attrs') (map unIChild children')
---                                XMLGenT $ Identity (Element
---                                                          (toName n)
---                                                          (map unIAttr $ concatMap runIdentity $ map unXMLGenT attrs)
---                                                          (map unIChild $ concatMap runIdentity $ map unXMLGenT children)
---                                                         )
     xmlToChild = IChild
     pcdataToChild = xmlToChild . pcdata
 
@@ -36,7 +31,7 @@ instance IsAttrValue Identity TL.Text where
     toAttrValue = toAttrValue . TL.unpack
 
 instance EmbedAsAttr Identity Attribute where
-    asAttr = return . (:[]) . IAttr 
+    asAttr = return . (:[]) . IAttr
 
 instance EmbedAsAttr Identity (Attr String Char) where
     asAttr (n := c)  = asAttr (n := [c])
