@@ -15,7 +15,7 @@ Cabal-version:       >=1.6
 source-repository head
     type:     darcs
     subdir:   happstack-hsp
-    location: http://patch-tag.com/r/mae/happstack
+    location: http://hub.darcs.net/stepcut/happstack
 
 Library
   Hs-source-dirs:      src
