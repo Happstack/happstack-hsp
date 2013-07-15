@@ -1,40 +1,47 @@
 -- | support for using HSP+Happstack for rendering HTML
-{-# LANGUAGE FlexibleInstances, FlexibleContexts #-}
-{-# OPTIONS_GHC -fno-warn-orphans -F -pgmFtrhsx #-}
+{-# LANGUAGE FlexibleInstances, FlexibleContexts, TypeFamilies, OverloadedStrings #-}
+{-# OPTIONS_GHC -fno-warn-orphans -F -pgmFhsx2hs #-}
 module Happstack.Server.HSP.HTML
   ( defaultTemplate
-  , webHSP
-  , webHSP'
-  , module HSP
   ) where
 
 import Control.Monad.Trans (MonadIO(), liftIO)
-import qualified Data.ByteString.Char8 as P
-import qualified Data.ByteString.Lazy.UTF8 as L
+import Data.Monoid ((<>))
+import qualified Data.Text.Encoding as T
+import qualified Data.Text.Lazy.Builder as TL
+import qualified Data.Text.Lazy.Encoding as TL
+import qualified Data.Text.Lazy as TL
+import           Data.Text.Lazy (Text)
+
 import Control.Monad (liftM)
 import Happstack.Server
   ( ToMessage(toMessage, toContentType, toResponse)
   , Response
   )
-import HSP
-import HSP.ServerPartT      () -- import 'instance XMLGen ServerPartT'
-import Happstack.Server.HSX () -- import 'instance Happstack XMLGenT'
 
-instance ToMessage XML where
-    toContentType _ = P.pack "text/html;charset=utf-8"
-    toMessage xml   = toMessage (html4Strict, xml)
+import HSP
+import HSP.HTML4
 
 instance ToMessage (Maybe XMLMetaData, XML) where
-    toContentType (Just md,_) = P.pack (contentType md)
-    toContentType _ = P.pack "text/html;charset=utf-8"
+    toContentType (Just md,_) = T.encodeUtf8 $ TL.toStrict (contentType md)
+    toContentType _ = "text/html;charset=utf-8"
+
     toMessage (Just (XMLMetaData (showDt, dt) _ pr), xml) =
-        L.fromString ((if showDt then (dt ++) else id) (pr xml))
+         TL.encodeUtf8 $ TL.toLazyText ((if showDt then ((TL.fromLazyText dt) <>) else id) (pr xml))
+
     toMessage (Nothing, xml) =
-        L.fromString (renderAsHTML xml)
+        TL.encodeUtf8 (renderAsHTML xml)
+
+
+instance ToMessage XML where
+    toContentType _ = "text/html;charset=utf-8"
+    toMessage xml   = toMessage (html4Strict, xml)
+
 
 -- | A generic webpage template
-defaultTemplate :: (XMLGenerator m, EmbedAsChild m headers, EmbedAsChild m body) =>
-                   String   -- ^ text to use in \<title\> tag
+defaultTemplate :: ( XMLGenerator m, EmbedAsChild m headers
+                   , EmbedAsChild m body, StringType m ~ Text) =>
+                   TL.Text  -- ^ text to use in \<title\> tag
                 -> headers  -- ^ extra headers to insert in \<head\> tag. Use @()@ if none.
                 -> body     -- ^ content to put between the \<body\> tags.
                 -> m (XMLType m)
@@ -49,14 +56,3 @@ defaultTemplate title headers body =
       <% body %>
      </body>
     </html>
-
--- | Converts a @HSP XML@ to a Happstack 'Response'.
--- Since @HSP XML@ is the type returned by using literal HTML syntax
--- with HSP, you can wrap up your HTML as webHSP $ \<html\>...\</html\>
--- to use it with Happstack.
-webHSP :: (MonadIO m) => HSP XML -> m Response
-webHSP = webHSP' Nothing
-
--- | webHSP with 'XMLMetaData'
-webHSP' :: (MonadIO m) => Maybe XMLMetaData -> HSP XML -> m Response
-webHSP' metadata hsp = toResponse `liftM` liftIO (evalHSP metadata hsp)

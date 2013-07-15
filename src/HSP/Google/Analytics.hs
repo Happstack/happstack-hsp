@@ -1,5 +1,5 @@
-{-# LANGUAGE DeriveDataTypeable, PatternGuards, FlexibleContexts, TypeFamilies #-}
-{-# OPTIONS_GHC -F -pgmFtrhsx #-}
+{-# LANGUAGE DeriveDataTypeable, PatternGuards, FlexibleContexts, TypeFamilies, OverloadedStrings #-}
+{-# OPTIONS_GHC -F -pgmFhsx2hs #-}
 module HSP.Google.Analytics
     ( UACCT(..)
     , analytics
@@ -8,6 +8,7 @@ module HSP.Google.Analytics
     ) where
 
 import Data.Generics (Data, Typeable)
+import Data.Text.Lazy (Text)
 import HSP
 import Prelude hiding (head)
 
@@ -17,7 +18,7 @@ newtype UACCT = UACCT String -- ^ The UACCT provided to you by Google (looks lik
 -- | create the google analytics asynchronous tracking script tag
 --
 -- NOTE: you must put this right before the \<\/head\> tag
-analyticsAsync :: (XMLGenerator m) =>
+analyticsAsync :: (XMLGenerator m, StringType m ~ Text) =>
                   UACCT     -- ^ web property ID (looks like: @UA-XXXXX-X@)
                -> GenXML m
 analyticsAsync (UACCT uacct) =
@@ -42,7 +43,7 @@ analyticsAsync (UACCT uacct) =
 -- You probably want to use 'analyticsAsync' instead.
 --
 -- See also: 'addAnalytics', 'analyticsAsync'
-analytics :: (XMLGenerator m) => UACCT -> GenXMLList m
+analytics :: (XMLGenerator m, StringType m ~ Text) => UACCT -> GenXMLList m
 analytics (UACCT uacct) =
     do a <- <script type="text/javascript">
               var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
@@ -61,7 +62,9 @@ addAnalytics :: ( AppendChild m XML
                 , EmbedAsChild m XML
                 , EmbedAsAttr m Attribute
                 , XMLGenerator m
-                , XMLType m ~ XML)
+                , XMLType m ~ XML
+                , StringType m ~ Text
+                )
              => UACCT
              -> XMLGenT m XML
              -> GenXML m

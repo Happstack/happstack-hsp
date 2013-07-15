@@ -1,13 +1,13 @@
 -- | This module contains orphan 'XMLGenT' instances for 'ServerMonad', 'FilterMonad', 'WebMonad', 'HasRqData', and 'Happstack'. It does not export any functions.
 {-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, TypeFamilies, UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module Happstack.Server.HSX where
+module Happstack.Server.XMLGenT where
 
 import Control.Applicative         (Alternative(..))
 import Control.Monad               (MonadPlus(..))
 import Control.Monad.Trans         (MonadIO(..))
 import Happstack.Server.SimpleHTTP (ServerMonad(..), FilterMonad(..), WebMonad(..), HasRqData(..), Happstack(..), Response)
-import HSX.XMLGenerator            (XMLGenT(..))
+import HSP.XMLGenerator            (XMLGenT(..))
 
 instance (ServerMonad m) => ServerMonad (XMLGenT m) where
     askRq = XMLGenT askRq
