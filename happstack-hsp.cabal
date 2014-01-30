@@ -36,6 +36,6 @@ Library
                        mtl              >= 1.1 && < 2.2,
                        utf8-string      == 0.3.*,
                        syb              >= 0.3 && < 0.5,
-                       text             >= 0.10 && < 1.1
+                       text             >= 0.10 && < 1.2
 
 --  Build-tools:         hsx2hs
