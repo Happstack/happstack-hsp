@@ -1,6 +1,6 @@
 -- | support for using HSP+Happstack for rendering HTML
-{-# LANGUAGE FlexibleInstances, FlexibleContexts, TypeFamilies, OverloadedStrings #-}
-{-# OPTIONS_GHC -fno-warn-orphans -F -pgmFhsx2hs #-}
+{-# LANGUAGE FlexibleInstances, FlexibleContexts, QuasiQuotes, TypeFamilies, OverloadedStrings #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Happstack.Server.HSP.HTML
   ( defaultTemplate
   ) where
@@ -12,6 +12,7 @@ import qualified Data.Text.Lazy.Builder as TL
 import qualified Data.Text.Lazy.Encoding as TL
 import qualified Data.Text.Lazy as TL
 import           Data.Text.Lazy (Text)
+import Language.Haskell.HSX.QQ  (hsx)
 
 import Control.Monad (liftM)
 import Happstack.Server
@@ -46,7 +47,7 @@ defaultTemplate :: ( XMLGenerator m, EmbedAsChild m headers
                 -> body     -- ^ content to put between the \<body\> tags.
                 -> m (XMLType m)
 defaultTemplate title headers body =
-    unXMLGenT $
+    unXMLGenT $ [hsx|
     <html>
      <head>
       <title><% title %></title>
@@ -56,3 +57,4 @@ defaultTemplate title headers body =
       <% body %>
      </body>
     </html>
+     |]
