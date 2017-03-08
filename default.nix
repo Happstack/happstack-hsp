@@ -3,9 +3,9 @@
 }:
 mkDerivation {
   pname = "happstack-hsp";
-  version = "7.3.4";
+  version = "7.3.7.1";
   src = ./.;
-  buildDepends = [
+  libraryHaskellDepends = [
     base bytestring happstack-server harp hsp hsx2hs mtl syb text
     utf8-string
   ];
