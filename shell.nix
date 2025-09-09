@@ -12,7 +12,7 @@ let
         version = "7.3.7.3";
         src = ./.;
         libraryHaskellDepends = [
-          base bytestring happstack-server harp hsp hsx2hs mtl syb text
+          base bytestring happstack-server hsp hsx2hs mtl syb text
           utf8-string cabal-install
         ];
         homepage = "http://www.happstack.com/";
